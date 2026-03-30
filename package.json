@@ -9,31 +9,31 @@
   "repository": "https://github.com/tryreplay/replay-app",
   "scripts": {
     "check-signature": "spctl --assess -vvvv dist/mac/Replay.app; spctl --assess -vvvv dist/mac-arm64/Replay.app; codesign -vvv --deep --strict dist/mac/Replay.app; codesign -vvv --deep --strict dist/mac-arm64/Replay.app",
-    "package": "yarn build:notarize && cross-env NODE_ENV=production APP_ENV=production ELECTRON=true REPLAY_PORT=62362 electron-builder build",
+    "package": "bun run build:notarize && cross-env NODE_ENV=production APP_ENV=production ELECTRON=true REPLAY_PORT=62362 electron-builder build",
     "build:notarize": "node scripts/build-notarize.js",
     "update:config": "node scripts/update-r2-config.js",
-    "update-version": "node scripts/update-version.js && yarn prettier -w package.json",
+    "update-version": "node scripts/update-version.js && bun run prettier -w package.json",
     "wait-for-server": "node scripts/wait-for-server.js",
     "update:zips": "node scripts/cleanup-r2-zips.js",
-    "classify-hugging-face": "ts-node-esm scripts/classify-huggingface-data.mts",
-    "parse-discord": "ts-node-esm scripts/parse-discord-responses.mts",
-    "electron:esbuild": "ts-node-esm --transpileOnly electron/electron-esbuild/index.mts",
-    "build:electron": "cross-env NODE_ENV=production APP_ENV=production ELECTRON=true REPLAY_PORT=62362 yarn electron:esbuild build",
-    "build": "yarn build:electron",
-    "fastbuild": "yarn build:notarize && electron-builder build --dir -c.mac.identity=null",
-    "devbuild": "yarn build:notarize && electron-builder build -m zip -c.mac.identity=null",
-    "typecheck": "yarn workspaces run typecheck",
-    "lint": "yarn workspaces run lint",
-    "start:app": "cross-env ELECTRON=true yarn electron:esbuild dev",
-    "dev": "yarn start:app",
-    "dev:debug": "cross-env DEBUG_LOGGING=true yarn start:app",
-    "dev:electron": "yarn dev",
+    "classify-hugging-face": "tsx scripts/classify-huggingface-data.mts",
+    "parse-discord": "tsx scripts/parse-discord-responses.mts",
+    "electron:esbuild": "tsx electron/electron-esbuild/index.mts",
+    "build:electron": "cross-env NODE_ENV=production APP_ENV=production ELECTRON=true REPLAY_PORT=62362 bun run electron:esbuild build",
+    "build": "bun run build:electron",
+    "fastbuild": "bun run build:notarize && electron-builder build --dir -c.mac.identity=null",
+    "devbuild": "bun run build:notarize && electron-builder build -m zip -c.mac.identity=null",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint",
+    "start:app": "cross-env ELECTRON=true bun run electron:esbuild dev",
+    "dev": "bun run start:app",
+    "dev:debug": "cross-env DEBUG_LOGGING=true bun run start:app",
+    "dev:electron": "bun run dev",
     "clean": "rimraf dist electron/build ui/out",
-    "dev:web": "yarn workspace @replay/electron dev",
-    "generate:client": "scripts/generate-api-types.sh && yarn prettier -w shared/*",
-    "dev:webapp": "yarn workspace @replay/webapp dev",
-    "build:webapp": "yarn workspace @replay/webapp build",
-    "start:webapp": "yarn workspace @replay/webapp start"
+    "dev:web": "bun run --filter @replay/electron dev",
+    "generate:client": "scripts/generate-api-types.sh && bun run prettier -w shared/*",
+    "dev:webapp": "bun run --filter @replay/webapp dev",
+    "build:webapp": "bun run --filter @replay/webapp build",
+    "start:webapp": "bun run --filter @replay/webapp start"
   },
   "workspaces": [
     "api",
@@ -276,5 +276,15 @@
   },
   "dependencies": {
     "react-h5-audio-player": "^3.8.6"
-  }
+  },
+  "trustedDependencies": [
+    "@sentry/cli",
+    "core-js",
+    "electron",
+    "esbuild",
+    "ffmpeg-static-fork",
+    "ffprobe-static-fork",
+    "protobufjs",
+    "sharp"
+  ]
 }

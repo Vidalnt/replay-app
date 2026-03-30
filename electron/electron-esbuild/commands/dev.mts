@@ -19,7 +19,7 @@ import { Worker } from "../worker.mts";
 import { rimraf } from "rimraf";
 
 const _isWindows = process.platform === "win32";
-const _electronBin = _isWindows ? "electron.cmd" : "electron";
+const _electronBin = _isWindows ? "electron.exe" : "electron";
 const _logger = new Logger("Commands/Dev");
 
 class _ApplicationStarter {
