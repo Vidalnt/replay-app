@@ -32,7 +32,7 @@ interface DropdownOption<T> {
   label: string;
 }
 
-const F0Methods = ["pm", "harvest", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"] as const;
+const F0Methods = ["fcpe", "crepe", "rmvpe"] as const;
 const F0Options: DropdownOption<F0Method>[] = F0Methods.map((l) => ({
   value: l as F0Method,
   label: startCase(l),
