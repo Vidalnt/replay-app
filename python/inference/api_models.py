@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from inference.config import DEVICE
 from inference.uvr.constants import DEMUCS_ARCH_TYPE, MDX_ARCH_TYPE, VR_ARCH_TYPE
 
-F0_METHODS = Literal["pm", "harvest", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"]
+F0_METHODS = Literal["fcpe", "crepe", "rmvpe"]
 OUTPUT_FORMATS = Literal["wav", "mp3_192k", "mp3_320k"]
 
 
@@ -53,7 +53,9 @@ class JobProgressReq(BaseModel):
     jobId: str
 
 
-STATUS = Literal["queued", "processing", "errored", "completed", "unknown_job", "unknown", "stopped"]
+STATUS = Literal[
+    "queued", "processing", "errored", "completed", "unknown_job", "unknown", "stopped"
+]
 
 
 class JobProgressResp(BaseModel):
@@ -64,7 +66,9 @@ class JobProgressResp(BaseModel):
     elapsedSeconds: Optional[int] = Field(default=None)
     remainingSeconds: Optional[int] = Field(default=None)
     outputFilepath: Optional[str] = Field(default=None)
-    inputFilepath: Optional[str] = Field(default=None)  # this could be the converted youtube path
+    inputFilepath: Optional[str] = Field(
+        default=None
+    )  # this could be the converted youtube path
     preDeechoVocalsFile: Optional[str] = Field(default=None)
     originalVocalsPath: Optional[str] = Field(default=None)
     convertedVocalsPath: Optional[str] = Field(default=None)

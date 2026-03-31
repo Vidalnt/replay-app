@@ -10,16 +10,16 @@ import traceback
 from shutil import which
 from typing import Optional
 
+import librosa
 import numpy as np
+import soundfile as sf
 import torch
 import yt_dlp
 from pydub import AudioSegment
-from scipy.io import wavfile
 
-from inference.api_models import CreateSongOptions, JobProgressResp, STATUS
+from inference.api_models import STATUS, CreateSongOptions, JobProgressResp
 from inference.args import parse_args
 from inference.utils import find_pth_and_index_files, load_audio
-import librosa
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,12 @@ class InferenceManager:
                 self.originals_directory,
                 f"sample_{self.track_md5}.wav",
             )
-            wavfile.write(sample_file, sample_rate, audio_data)
+            sf.write(sample_file, audio_data, sample_rate, format="WAV")
             self.source_audio_path = sample_file
 
-        self.track_md5 = hashlib.md5(open(self.source_audio_path, "rb").read()).hexdigest()
+        self.track_md5 = hashlib.md5(
+            open(self.source_audio_path, "rb").read()
+        ).hexdigest()
         # make a copy of the source file locally to always be able to play it
         os.makedirs(self.originals_directory, exist_ok=True)
         extension = os.path.splitext(self.source_audio_path)[1]
@@ -89,7 +91,9 @@ class InferenceManager:
         options = options or CreateSongOptions()
         pre_stemmed = options is not None and options.preStemmed
         sample_mode_30s = options is not None and options.sampleMode
-        sample_mode_start_time = options is not None and options.sampleModeStartTime or 0
+        sample_mode_start_time = (
+            options is not None and options.sampleModeStartTime or 0
+        )
         pitch = options is not None and options.pitch
         instrumentals_pitch = options is not None and options.instrumentalsPitch
         vocals_only = options is not None and options.vocalsOnly
@@ -151,9 +155,9 @@ class InferenceManager:
     def stem_and_load_input_track(self):
         from inference.stemmer import Stemmer
 
-        self.check_and_update_status("UVR: Starting track separation...")
+        self.check_and_update_status("Starting track separation...")
         if self.pre_stemmed:
-            logger.info("UVR: Pre-stemmed track detected. Skipping separation.")
+            logger.info("Pre-stemmed track detected. Skipping separation.")
             self.vocals_file = self.source_audio_path
         else:
             start_time = time.time()
@@ -169,10 +173,12 @@ class InferenceManager:
                 update_status,
             )
             elapsed_time = time.time() - start_time
-            logger.info(f"UVR: Separation complete. Elapsed time: {elapsed_time}")
+            logger.info(f"Separation complete. Elapsed time: {elapsed_time}")
             if self.options.deEchoDeReverb:
                 self.check_and_update_status("De-Echoing input file")
-                md5_vocals = hashlib.md5(open(self.vocals_file, "rb").read()).hexdigest()
+                md5_vocals = hashlib.md5(
+                    open(self.vocals_file, "rb").read()
+                ).hexdigest()
                 vocal_copies_dir = os.path.join(
                     self.stems_directory,
                     "vocals_copies",
@@ -195,14 +201,13 @@ class InferenceManager:
                     md5_vocals_file,
                     self.stems_directory,
                     self.weights_path,
-                    "UVR-DeEcho-DeReverb by FoxJoy",
+                    "UVR-DeEcho-DeReverb.pth",
                     update_status_deecho,
                 )
-                # we might want to merge the echo and reverb back into the instrumentals? or run the model on it? idk
                 elapsed_time = time.time() - start_time
                 logger.info(f"De-echo complete. Elapsed time: {elapsed_time}")
 
-        logger.info("UVR: Track separation complete.")
+        logger.info("Track separation complete.")
         logger.info("---------------------------------")
 
     def pitch_shift(self, audio: AudioSegment, pitch: int):
@@ -223,10 +228,14 @@ class InferenceManager:
             samples_float = samples.astype(np.float32) / np.iinfo(samples.dtype).max
 
             # Use librosa to perform the pitch shift
-            y_shifted = librosa.effects.pitch_shift(samples_float, sr=audio.frame_rate, n_steps=float(pitch))
+            y_shifted = librosa.effects.pitch_shift(
+                samples_float, sr=audio.frame_rate, n_steps=float(pitch)
+            )
 
             # Convert the floating-point values back to the original data type
-            int_samples = np.array(y_shifted * np.iinfo(samples.dtype).max, dtype=samples.dtype)
+            int_samples = np.array(
+                y_shifted * np.iinfo(samples.dtype).max, dtype=samples.dtype
+            )
 
             # Create a new AudioSegment object with the modified samples for the channel
             shifted_channel = AudioSegment(
@@ -262,7 +271,7 @@ class InferenceManager:
             self.converted_vocals_file = vocal_output
             os.makedirs(outputs, exist_ok=True)
             logger.info(f"RVCv2: Inference succeeded. Writing to {vocal_output}...")
-            wavfile.write(vocal_output, tgt_sr, audio_opt)
+            sf.write(vocal_output, audio_opt, tgt_sr, format="WAV")
             logger.info(f"RVCv2: Finished! Saved output to {vocal_output}")
             logger.info("---------------------------------")
             logger.info("Rejoining the track...")
@@ -274,11 +283,15 @@ class InferenceManager:
                 instrumental = AudioSegment.from_wav(self.instrumentals_file)
                 if self.instrumentals_pitch:
                     logger.info("RVCv2: Adjusting pitch of instrumentals...")
-                    instrumental = self.pitch_shift(instrumental, self.instrumentals_pitch)
+                    instrumental = self.pitch_shift(
+                        instrumental, self.instrumentals_pitch
+                    )
                 # Combine the audio files
                 self.joined_track = instrumental.overlay(vocal)
             else:
-                logger.info("RVCv2: Unable to find instrumentals file. Skipping rejoin.")
+                logger.info(
+                    "RVCv2: Unable to find instrumentals file. Skipping rejoin."
+                )
 
             logger.info("Track rejoined.")
             logger.info("Writing completed file...")
@@ -293,7 +306,11 @@ class InferenceManager:
                 output_file = "final.mp3"
                 parameters = {"format": "mp3", "bitrate": "320k"}
             else:
-                logger.info("Unsupported output format: {}. Using default (mp3_192k).".format(self.output_format))
+                logger.info(
+                    "Unsupported output format: {}. Using default (mp3_192k).".format(
+                        self.output_format
+                    )
+                )
                 output_file = "final.mp3"
                 parameters = {"format": "mp3", "bitrate": "192k"}
             joined_track_export = os.path.join(self.output_directory, output_file)
@@ -327,8 +344,8 @@ class InferenceManager:
         # Check if the url is a valid YouTube video link
         youtube_regex = (
             r"(https?://)?(www\.)?"
-            "(youtube|youtu|youtube-nocookie)\.(com|be)/"
-            "(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})"
+            r"(youtube|youtu|youtube-nocookie)\.(com|be)/"
+            r"(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})"
         )
 
         youtube_regex_match = re.match(youtube_regex, url)
@@ -339,7 +356,9 @@ class InferenceManager:
             if d["status"] == "finished":
                 self.check_and_update_status("Youtube download complete")
             if d["status"] == "downloading":
-                self.check_and_update_status(f"Downloading youtube audio:{d['_percent_str']}{d['_speed_str']}")
+                self.check_and_update_status(
+                    f"Downloading youtube audio:{d['_percent_str']}{d['_speed_str']}"
+                )
 
         # Define the options for youtube_dl
         ydl_opts = {
@@ -362,7 +381,11 @@ class InferenceManager:
 
         # Sanitize the title for use in a filename
         safe_title = (
-            video_title.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "_").replace("*", "_")
+            video_title.replace(" ", "_")
+            .replace("/", "_")
+            .replace("\\", "_")
+            .replace(":", "_")
+            .replace("*", "_")
         )
         # even more safe title
         safe_title = "".join(x for x in safe_title if x.isalnum())
@@ -426,10 +449,14 @@ class InferenceManager:
             raise runtime_error
 
     def set_source_audio_path(self):
-        is_yt_video, yt_audio_path = self.check_and_download_youtube_audio(self.source_audio_path)
+        is_yt_video, yt_audio_path = self.check_and_download_youtube_audio(
+            self.source_audio_path
+        )
         if is_yt_video:
             if not os.path.exists(yt_audio_path):
-                raise RuntimeError(f"Unable to download YouTube video: {self.source_audio_path}")
+                raise RuntimeError(
+                    f"Unable to download YouTube video: {self.source_audio_path}"
+                )
             self.set_track_values(yt_audio_path)
 
     def create_preview_tracks(self):
@@ -465,7 +492,9 @@ class InferenceManager:
             self.set_source_audio_path()
             logger.info(f"Source audio path: {self.source_audio_path}")
             if self.vocals_only:
-                self.check_and_update_status("Skipping inference due to vocalsOnly option")
+                self.check_and_update_status(
+                    "Skipping inference due to vocalsOnly option"
+                )
                 self.stem_and_load_input_track()
                 self.output_filepath = self.vocals_file
                 self.create_preview_tracks()

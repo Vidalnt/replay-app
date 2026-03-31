@@ -221,7 +221,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["pm", "harvest", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"]
+                "enum": ["fcpe", "crepe", "rmvpe"]
               },
               { "type": "null" }
             ],
@@ -286,7 +286,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["pm", "harvest", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"]
+                "enum": ["fcpe", "crepe", "rmvpe"]
               },
               { "type": "null" }
             ],

@@ -1,28 +1,29 @@
 import os
 
-import ffmpeg
+import librosa
 import numpy as np
+import soundfile as sf
 
 
-def load_audio(file, sr) -> np.ndarray:
+def load_audio(file, sample_rate) -> np.ndarray:
     try:
-        # https://github.com/openai/whisper/blob/main/whisper/audio.py#L26
-        # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
-        # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        job = ffmpeg.input(file, threads=0).output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sr)
-        out, _ = job.run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"File not found: {file}")
 
+        audio, sr = sf.read(file)
+
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.T)
+
+        if sr != sample_rate:
+            audio = librosa.resample(
+                audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
+            )
+
+        return audio.flatten()
     except Exception as e:
         raise RuntimeError(f"Failed to load audio file {file}: {e}")
-
-    return np.frombuffer(out, np.float32).flatten()
-
-
-def seconds_to_time(seconds):
-    # This function takes an integer number of seconds and returns a string in the format MM:SS
-    minutes, seconds = divmod(seconds, 60)
-    return "{:02}:{:02}".format(int(minutes), int(seconds))
 
 
 def find_pth_and_index_files(directory):

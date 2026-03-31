@@ -52,8 +52,7 @@ declare namespace Components {
       /**
        * F0Method
        */
-      f0Method?: /* F0Method */
-      ("pm" | "harvest" | "crepe" | "crepe-tiny" | "mangio-crepe" | "mangio-crepe-tiny" | "rmvpe") | null;
+      f0Method?: /* F0Method */ ("fcpe" | "crepe" | "rmvpe") | null;
       /**
        * Stemmingmethod
        */
@@ -110,8 +109,7 @@ declare namespace Components {
       /**
        * F0Method
        */
-      f0Method: /* F0Method */
-      ("pm" | "harvest" | "crepe" | "crepe-tiny" | "mangio-crepe" | "mangio-crepe-tiny" | "rmvpe") | null;
+      f0Method: /* F0Method */ ("fcpe" | "crepe" | "rmvpe") | null;
       /**
        * Stemmingmethod
        */
