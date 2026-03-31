@@ -14,7 +14,7 @@ class RMVPE:
         self.sample_rate = sample_rate
         self.hop_size = hop_size
         self.model = RMVPE0Predictor(
-            os.path.join(weights_path, "rmvpe.pt"),
+            os.path.join(weights_path, "predictors", "rmvpe.pt"),
             device=self.device,
         )
 
@@ -63,7 +63,7 @@ class FCPE:
         self.sample_rate = sample_rate
         self.hop_size = hop_size
         self.model = spawn_infer_model_from_pt(
-            os.path.join(weights_path, "fcpe.pt"),
+            os.path.join(weights_path, "predictors", "fcpe.pt"),
             self.device,
             bundled_model=True,
         )

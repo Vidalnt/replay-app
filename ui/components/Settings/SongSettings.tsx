@@ -5,24 +5,18 @@ import Box from "@mui/material/Box";
 import { IconButton, InputBase, Slider, Switch } from "@mui/material";
 import { Typography } from "@mui/material";
 import "./settings.css";
-import { Add, Close, Download } from "@mui/icons-material";
+import { Add, Close } from "@mui/icons-material";
 import Select from "react-select";
 import { selectTheme } from "../Select/select.tsx";
 import { groupBy, startCase } from "lodash-es";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import { trpcReact } from "../../config/trpc.ts";
-import {
-  useDevice,
-  useHasDownloadedSelectedStemModel,
-  useHasDownloadedSelectedStemModelsList,
-  useStemModelList,
-} from "../../hooks/dataHooks.ts";
+import { useDevice } from "../../hooks/dataHooks.ts";
 import { toast } from "react-toastify";
 import theme from "../theme.ts";
-import { useAnalytics } from "../../hooks/useAnalytics.ts";
-import { ICON_SIZE } from "../CreateSong/ModelSelector/shared.tsx";
-import CircularProgress from "@mui/material/CircularProgress";
+import type { GroupHeadingProps, GroupBase } from "react-select";
+import { components } from "react-select";
 type F0Method = NonNullable<AdvancedOptions["f0Method"]>;
 type StemMethod = NonNullable<AdvancedOptions["stemmingMethod"]>;
 type OutputFormat = NonNullable<AdvancedOptions["outputFormat"]>;
@@ -117,111 +111,6 @@ const FZeroMethod = () => {
   );
 };
 
-const StemMethodDownloader = () => {
-  const options = useReplay((state) => state.options);
-  const hasDownloadedStemModel = useHasDownloadedSelectedStemModel();
-  const { refetch: refetchModels } = trpcReact.listDownloadedStemModels.useQuery(undefined);
-  const logEvent = useAnalytics();
-  const { mutateAsync: downloadModel, isLoading: _isDownloading } = trpcReact.downloadStemModel.useMutation();
-  const stemmingMethod = options.stemmingMethod;
-  const { data: downloadStatus, refetch: refetchModelDownloadStatus } = trpcReact.fetchStemModelDownloadStatus.useQuery(
-    stemmingMethod,
-    {
-      enabled: !hasDownloadedStemModel,
-      refetchInterval: hasDownloadedStemModel ? false : 1000,
-    },
-  );
-
-  const errorString = String(downloadStatus?.error || "");
-  const isError = Boolean(errorString);
-
-  const isDownloading = _isDownloading || Boolean(downloadStatus?.progress);
-  React.useEffect(() => {
-    if (isError && stemmingMethod) {
-      toast.error(`Failed to download ${stemmingMethod}: ${errorString}`, {
-        toastId: `downloadError-${stemmingMethod}`,
-      });
-    }
-  }, [errorString, isError, stemmingMethod]);
-
-  if (!stemmingMethod || hasDownloadedStemModel) {
-    return null;
-  }
-
-  const onIconClick = async () => {
-    if (!hasDownloadedStemModel) {
-      logEvent({ event: "stemModelDownload", metadata: { modelId: stemmingMethod } });
-      await downloadModel(stemmingMethod);
-      await refetchModelDownloadStatus();
-      await refetchModels();
-    }
-  };
-
-  let currFilePercent = 0;
-  if (downloadStatus?.fileCounts) {
-    const fileCounts = downloadStatus.fileCounts;
-    const { remaining, total } = fileCounts;
-    const completed = total - remaining;
-    const eachFilePercent = 1 / total;
-    currFilePercent += eachFilePercent * completed;
-    if (downloadStatus?.progress) {
-      const progress = downloadStatus.progress;
-      const fileByteCount = progress.total || 1;
-      const currentFileDownloadedBytes = progress.loaded || 0;
-      if (progress.total) {
-        let thisFilePercent = Math.round((currentFileDownloadedBytes * 100) / fileByteCount);
-        thisFilePercent /= eachFilePercent; // if we're downloading 3 files, then we divide it by three
-        // but then we add the number we've already completed
-        currFilePercent += thisFilePercent;
-      }
-    }
-  }
-
-  const getIcon = () => {
-    if (isError) {
-      return <Close onClick={onIconClick} color={"error"} sx={{ fontSize: ICON_SIZE, color: theme.colors.error }} />;
-    }
-    if (isDownloading) {
-      return (
-        <CircularProgress
-          color={"primary"}
-          size={ICON_SIZE}
-          variant={currFilePercent ? "determinate" : "indeterminate"}
-          value={currFilePercent}
-        />
-      );
-    }
-    return <Download onClick={onIconClick} sx={{ cursor: "pointer", fontSize: ICON_SIZE }} />;
-  };
-  return (
-    <Box
-      sx={{
-        px: 1,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        alignSelf: "center",
-        cursor: "pointer",
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {getIcon()}
-      </Box>
-    </Box>
-  );
-};
-
-import type { GroupHeadingProps, GroupBase } from "react-select";
-import { components } from "react-select";
 
 const groupStyles = {
   color: "white",
@@ -242,14 +131,13 @@ const GroupHeading = (
 const StemmingMethod = () => {
   const options = useReplay((state) => state.options);
   const setAdvancedOptions = useReplay((state) => state.setAdvancedOptions);
-  const hasDownloadedStemModel = useHasDownloadedSelectedStemModel();
-  const downloadedModelList = useHasDownloadedSelectedStemModelsList();
-  const { data } = useStemModelList();
+  const { data } = trpcReact.fetchStemmingModels.useQuery(undefined, {
+    placeholderData: [],
+  });
   const StemOptions: (DropdownOption<StemMethod> & { type: string })[] = (data || []).map((o) => {
-    const hasDownloaded = downloadedModelList.find((model) => model.name === o.name);
     return {
       value: o.name,
-      label: hasDownloaded ? `✅  ${o.name}` : o.name,
+      label: o.name,
       type: o.type,
     };
   });
@@ -293,7 +181,6 @@ const StemmingMethod = () => {
             onBlur={() => {}}
             components={{ GroupHeading }}
           />
-          {!hasDownloadedStemModel && <StemMethodDownloader />}
         </Box>
       }
     />

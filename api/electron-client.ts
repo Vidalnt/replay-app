@@ -5,7 +5,6 @@ import jetpack from "fs-jetpack";
 import dayjs from "dayjs";
 import path from "path";
 import { appId } from "@replay/electron/utils/import-before-all-import.ts";
-import api from "@replay/shared/clients/api.ts";
 import type { SavedSong } from "@replay/electron/data/db-types.ts";
 export const fetchRequiredFiles = async () => {
   const { requiredFilesController } = await import("@replay/electron/clients/required-files-downloader.ts");
@@ -78,37 +77,11 @@ export const fetchModelDownloadStatus = async (model: ArtistModelOption | null |
   };
 };
 
-export const fetchStemModelDownloadStatus = async (model: string) => {
-  if (!model) {
-    return { progress: null, error: null };
-  }
-  const { requiredFilesController } = await import("@replay/electron/clients/required-files-downloader.ts");
-  return {
-    progress: requiredFilesController.stemProgress[model],
-    error: requiredFilesController.stemError[model],
-    fileCounts: requiredFilesController.numFilesDownloading[model],
-  };
-};
 export const downloadSpecificModel = async (model: ArtistModelOption) => {
   const { WeightDownloader } = await import("@replay/electron/clients/modelWeights.ts");
   return WeightDownloader.download(model);
 };
 
-export const downloadStemModel = async (model: string) => {
-  const { requiredFilesController } = await import("@replay/electron/clients/required-files-downloader.ts");
-  const resp = await api.stemmingModels();
-  const models = resp.data.models;
-  const modelInfo = models.find((m) => m.name === model);
-  if (!modelInfo) {
-    throw new Error(`Model ${model} not found`);
-  }
-  return requiredFilesController.downloadStemModel(modelInfo);
-};
-
-export const listStemModels = async () => {
-  const { requiredFilesController } = await import("@replay/electron/clients/required-files-downloader.ts");
-  return requiredFilesController.listStemModels();
-};
 export const hasRequiredFiles = async (fast?: boolean) => {
   const { hasRequiredFiles } = await import("@replay/electron/data/file-utils");
   return hasRequiredFiles(fast);

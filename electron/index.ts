@@ -115,8 +115,12 @@ if (!amMainInstance) {
     const deviceId = db.getDeviceId();
     logger.info(`Device ID: ${deviceId}`);
     Sentry.setUser({ id: deviceId });
-    pythonService.pythonServerIsValidFast().then((isValid) => {
+    pythonService.pythonServerIsValidFast().then(async (isValid) => {
       logger.info(`Python server valid: ${isValid}`);
+      if (isValid && isDev) {
+        logger.info("Starting Python server in dev mode...");
+        await pythonService.startServer();
+      }
     });
     nativeTheme.themeSource = "dark";
     appReady.resolve();

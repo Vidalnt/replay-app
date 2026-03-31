@@ -444,6 +444,13 @@ class PythonService {
   async getBinPath() {
     if (isDev) {
       const { lookpath } = await import("find-bin");
+      // On Windows, use 'py -3' launcher to avoid Microsoft Store alias issues
+      if (isWindows) {
+        const pyLauncher = await lookpath("py");
+        if (pyLauncher) {
+          return `"${pyLauncher}" -3`;
+        }
+      }
       const conda = await lookpath("/opt/homebrew/Caskroom/miniconda/base/envs/rvc310/bin/python");
       const py3 = await lookpath("python3");
       const py = await lookpath("python");
@@ -581,7 +588,9 @@ class PythonService {
       serverLogger.info(`Server already exists, not starting...`);
       return;
     }
-    this.server = execa(`"${binPath}"`, args, {
+    // For Windows with py launcher, binPath includes the -3 argument
+    const command = isWindows && binPath.includes('py') ? binPath : `"${binPath}"`;
+    this.server = execa(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
       cleanup: true,

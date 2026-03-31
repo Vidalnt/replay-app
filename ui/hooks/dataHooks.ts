@@ -6,10 +6,10 @@ import { useMemo } from "react";
 import type { ArtistModelOption } from "@replay/electron/clients/modelWeights.ts";
 
 export const useHasRequiredLocalFiles = () => {
-  return trpcReact.hasRequiredFiles.useQuery(true, { refetchInterval: (data) => (data ? false : 1500) });
+  return trpcReact.hasRequiredFiles.useQuery(undefined, { refetchInterval: (data) => (data ? false : 1500) });
 };
 export const useHasRequiredFileComprehensive = () => {
-  return trpcReact.hasRequiredFiles.useQuery(false, {
+  return trpcReact.hasRequiredFiles.useQuery(undefined, {
     refetchInterval: (data) => (data ? false : 1500),
   });
 };
@@ -69,40 +69,6 @@ export const useDevice = () => {
   return trpcReact.torchDevice.useQuery(undefined, { enabled: Boolean(isServerRunning) });
 };
 
-export const useHasDownloadedSelectedStemModel = (modelOverride?: string) => {
-  const downloadedModels = useHasDownloadedSelectedStemModelsList();
-  const options = useReplay((state) => state.options);
-
-  const stemMethod = modelOverride || options.stemmingMethod;
-  return Boolean(downloadedModels.find((model) => model.name === stemMethod));
-};
-
-export const useStemModelList = () => {
-  const isServerRunning = useIsServerRunning();
-  return trpcReact.fetchStemmingModels.useQuery(undefined, {
-    placeholderData: [],
-    refetchInterval: (d) => (d ? false : 1000),
-    enabled: Boolean(isServerRunning),
-  });
-};
-export const useHasDownloadedSelectedStemModelsList = () => {
-  const isServerRunning = useIsServerRunning();
-  const { data: modelsDownloaded = [] } = trpcReact.listDownloadedStemModels.useQuery(undefined, {
-    placeholderData: [],
-  });
-  const { data: stemmingModels = [] } = trpcReact.fetchStemmingModels.useQuery(undefined, {
-    enabled: Boolean(isServerRunning),
-    placeholderData: [],
-  });
-  return useMemo(
-    () =>
-      stemmingModels.filter((model) => {
-        const files = model.files;
-        return files.every((filename) => modelsDownloaded.includes(filename || ""));
-      }),
-    [modelsDownloaded, stemmingModels],
-  );
-};
 export const useModelNameFromId = (id: string | undefined | null) => {
   const { data: models } = useModelList();
   const { data } = useQuery(["modelName", models?.length, id], () => {

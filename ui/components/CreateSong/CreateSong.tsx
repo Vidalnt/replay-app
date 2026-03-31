@@ -14,7 +14,6 @@ import OnboardingModal from "../Onboarding/OnboardingModal";
 import { useAnalytics } from "../../hooks/useAnalytics.ts";
 import {
   useDevice,
-  useHasDownloadedSelectedStemModel,
   useIsServerRunning,
   useJobs,
   useSelectedModel,
@@ -28,14 +27,12 @@ const SubmitButton = () => {
   const { data: jobs, refetch: refetchJobs } = useJobs();
   const songUrlOrFilePath = useReplay((state) => state.songUrlOrFilePath);
   const { mutateAsync, error, isLoading } = trpcReact.createSong.useMutation();
-  const hasDownloadedStemModel = useHasDownloadedSelectedStemModel();
   const { data: device } = useDevice();
   const logEvent = useAnalytics();
 
   const isServerRunning = useIsServerRunning();
   const downloaded = selectedModel?.downloaded;
   const batchDisabled =
-    !hasDownloadedStemModel ||
     !isServerRunning ||
     isLoading ||
     (!downloaded && !options.vocalsOnly) ||
@@ -57,10 +54,6 @@ const SubmitButton = () => {
     }
     if (!modelId) {
       return "Select an artist";
-    }
-
-    if (!hasDownloadedStemModel) {
-      return "Download Stem Model First";
     }
 
     if (!downloaded) {

@@ -25,7 +25,7 @@ class HubertModel:
             if self.hubert_model is not None:
                 return
 
-            model_path = os.path.join(weights_path, embedder_model)
+            model_path = os.path.join(weights_path, "embedders", embedder_model)
             os.makedirs(model_path, exist_ok=True)
 
             bin_file = os.path.join(model_path, "pytorch_model.bin")

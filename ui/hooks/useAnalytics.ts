@@ -6,7 +6,6 @@ interface AnalyticsEvent {
   event:
     | "artistFavorite"
     | "pageView"
-    | "stemModelDownload"
     | "audioSelected"
     | "audioDownload"
     | "modelDownload"
