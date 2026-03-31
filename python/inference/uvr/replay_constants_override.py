@@ -11,5 +11,3 @@ if getattr(sys, "frozen", False):
 else:
     BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
-# --Constants--
-MDX_MIXER_PATH = os.path.join(BASE_PATH, "lib_v5", "mixer.ckpt")

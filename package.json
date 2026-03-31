@@ -97,9 +97,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "overrides": {
-    "typescript": "^5.1.6"
-  },
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx}": [
       "prettier --write",
